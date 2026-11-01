@@ -104,7 +104,7 @@ def seed_data(conn):
         ("978-0132350884", "Clean Code: A Handbook of Agile Software", "Robert C. Martin", dept_map["CSE"], "1st Ed.", 3, 2, "Shelf CS-05"),
 
         # MECH
-        ("978-9352606429", "Engineering Thermodynamics", "P.K. Nag", dept_map["MECH"], "6th Ed.", 6, 5, "Shelf ME-01"),
+        ("978-9352606429", "Engineering Thermodynamics", "P.K. Nag", dept_map["MECH"], "6th Ed.", 6, 6, "Shelf ME-01"),
         ("978-0195371239", "Theory of Machines and Mechanisms", "Joseph E. Shigley, John J. Uicker", dept_map["MECH"], "5th Ed.", 4, 4, "Shelf ME-02"),
         ("978-0073380322", "Fluid Mechanics: Fundamentals & Applications", "Yunus A. Cengel, John M. Cimbala", dept_map["MECH"], "4th Ed.", 5, 4, "Shelf ME-03"),
         ("978-0132272711", "Manufacturing Processes for Engineering Materials", "Serope Kalpakjian, Steven Schmid", dept_map["MECH"], "6th Ed.", 3, 3, "Shelf ME-04"),

@@ -179,13 +179,13 @@ def update_book(book_id):
         conn.close()
         return jsonify({"error": "Book not found"}), 404
 
-    isbn = data.get('isbn', book['isbn']).strip()
-    title = data.get('title', book['title']).strip()
-    author = data.get('author', book['author']).strip()
-    dept_id = data.get('department_id', book['department_id'])
-    edition = data.get('edition', book['edition']).strip()
-    new_total = int(data.get('total_copies', book['total_copies']))
-    shelf = data.get('shelf_location', book['shelf_location']).strip()
+    isbn = (data.get('isbn') or book['isbn']).strip()
+    title = (data.get('title') or book['title']).strip()
+    author = (data.get('author') or book['author']).strip()
+    dept_id = data.get('department_id') or book['department_id']
+    edition = (data.get('edition') or book['edition']).strip()
+    new_total = int(data.get('total_copies') or book['total_copies'])
+    shelf = (data.get('shelf_location') or book['shelf_location'] or '').strip()
 
     # Calculate new available copies based on issued delta
     issued_count = book['total_copies'] - book['available_copies']
@@ -297,6 +297,9 @@ def issue_book():
     issue_days = int(data.get('days', 14))
     notes = data.get('notes', '').strip()
 
+    if issue_days < 1:
+        return jsonify({"error": "Issue duration must be at least 1 day"}), 400
+
     if not book_id or not student_name or not roll_no:
         return jsonify({"error": "Book, Student Name, and Roll Number are required"}), 400
 
@@ -363,8 +366,12 @@ def return_book(issue_id):
         WHERE id = ?
     """, (return_date, fine, issue_id))
 
-    # Increment available copies
-    cursor.execute("UPDATE books SET available_copies = available_copies + 1 WHERE id = ?", (issue['book_id'],))
+    # Increment available copies (clamp to total_copies for safety)
+    cursor.execute("""
+        UPDATE books
+        SET available_copies = MIN(available_copies + 1, total_copies)
+        WHERE id = ?
+    """, (issue['book_id'],))
 
     conn.commit()
     conn.close()

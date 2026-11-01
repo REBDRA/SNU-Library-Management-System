@@ -26,7 +26,7 @@
         { id: 4, isbn: "978-0133594140", title: "Computer Networking: A Top-Down Approach", author: "James Kurose, Keith Ross", department_id: 1, edition: "8th Ed.", total_copies: 4, available_copies: 4, shelf_location: "Shelf CS-04" },
         { id: 5, isbn: "978-0132350884", title: "Clean Code: A Handbook of Agile Software", author: "Robert C. Martin", department_id: 1, edition: "1st Ed.", total_copies: 3, available_copies: 2, shelf_location: "Shelf CS-05" },
 
-        { id: 6, isbn: "978-9352606429", title: "Engineering Thermodynamics", author: "P.K. Nag", department_id: 2, edition: "6th Ed.", total_copies: 6, available_copies: 5, shelf_location: "Shelf ME-01" },
+        { id: 6, isbn: "978-9352606429", title: "Engineering Thermodynamics", author: "P.K. Nag", department_id: 2, edition: "6th Ed.", total_copies: 6, available_copies: 6, shelf_location: "Shelf ME-01" },
         { id: 7, isbn: "978-0195371239", title: "Theory of Machines and Mechanisms", author: "Joseph E. Shigley, John J. Uicker", department_id: 2, edition: "5th Ed.", total_copies: 4, available_copies: 4, shelf_location: "Shelf ME-02" },
         { id: 8, isbn: "978-0073380322", title: "Fluid Mechanics: Fundamentals & Applications", author: "Yunus A. Cengel, John M. Cimbala", department_id: 2, edition: "4th Ed.", total_copies: 5, available_copies: 4, shelf_location: "Shelf ME-03" },
         { id: 9, isbn: "978-0132272711", title: "Manufacturing Processes for Engineering Materials", author: "Serope Kalpakjian, Steven Schmid", department_id: 2, edition: "6th Ed.", total_copies: 3, available_copies: 3, shelf_location: "Shelf ME-04" },
@@ -274,9 +274,14 @@
             if (bookIdx === -1) return resObj({ error: 'Book not found' }, 404);
             if (books[bookIdx].available_copies <= 0) return resObj({ error: 'No copies available' }, 400);
 
+            // Check if student already has an active issue for this exact book
+            const alreadyIssued = issues.some(i => i.book_id === body.book_id && i.roll_no === body.roll_no && i.status === 'ISSUED');
+            if (alreadyIssued) return resObj({ error: `Student ${body.roll_no} already has an active issue for this book.` }, 400);
+
             books[bookIdx].available_copies -= 1;
             const newIssueId = issues.length > 0 ? Math.max(...issues.map(i => i.id)) + 1 : 1;
-            const due = addDays(body.days || 14);
+            const issueDays = parseInt(body.days) || 14;
+            const due = addDays(issueDays > 0 ? issueDays : 14);
 
             const newIssue = {
                 id: newIssueId,
@@ -315,7 +320,11 @@
 
             const bookIdx = books.findIndex(b => b.id === issue.book_id);
             if (bookIdx !== -1) {
-                books[bookIdx].available_copies += 1;
+                // Clamp to total_copies for safety
+                books[bookIdx].available_copies = Math.min(
+                    books[bookIdx].available_copies + 1,
+                    books[bookIdx].total_copies
+                );
                 localStorage.setItem('snu_books', JSON.stringify(books));
             }
             localStorage.setItem('snu_issues', JSON.stringify(issues));
@@ -446,9 +455,8 @@ function handleGlobalSearch(val) {
         } else if (state.activeTab === 'issues') {
             loadIssues();
         } else {
-            // Switch to catalog to show search results
+            // Switch to catalog to show search results — switchTab already calls loadCatalogBooks()
             switchTab('catalog');
-            loadCatalogBooks();
         }
     }, 250);
 }
@@ -493,12 +501,10 @@ async function refreshCurrentData() {
 
 // Stat Card Quick Navigation Handlers
 function filterCatalogByStock(stockFilter) {
-    switchTab('catalog');
     const select = document.getElementById('catalog-status-filter');
-    if (select) {
-        select.value = stockFilter;
-        loadCatalogBooks();
-    }
+    if (select) select.value = stockFilter;
+    state.catalogStatusFilter = stockFilter;
+    switchTab('catalog');
 }
 
 function filterLoansTab(status) {
@@ -699,7 +705,6 @@ function viewDepartmentBooks(deptId) {
     state.currentDeptFilter = deptId;
     switchTab('catalog');
     renderCatalogDeptChips();
-    loadCatalogBooks();
 }
 
 async function loadCatalogBooks() {
@@ -1100,8 +1105,14 @@ async function openIssueModal(preselectedBookId = null) {
 async function handleIssueSubmit(event) {
     event.preventDefault();
 
+    const bookIdRaw = parseInt(document.getElementById('issue-book-select').value);
+    if (!bookIdRaw || isNaN(bookIdRaw)) {
+        showToast('Please select a valid book to issue', 'error');
+        return;
+    }
+
     const payload = {
-        book_id: parseInt(document.getElementById('issue-book-select').value),
+        book_id: bookIdRaw,
         student_name: document.getElementById('student-name').value,
         roll_no: document.getElementById('student-roll').value,
         student_dept: document.getElementById('student-dept').value,
@@ -1140,8 +1151,8 @@ async function openReturnModal(issueId) {
     if (!issue) {
         try {
             const res = await fetch('/api/issues');
-            state.issues = await res.json();
-            issue = state.issues.find(i => i.id === issueId);
+            const allIssues = await res.json();
+            issue = allIssues.find(i => i.id === issueId);
         } catch (err) {
             console.error('Error fetching issue details', err);
         }
