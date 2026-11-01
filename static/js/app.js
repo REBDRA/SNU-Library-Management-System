@@ -3,6 +3,350 @@
    Frontend Application Logic & State Controller
    ========================================================================== */
 
+// ==========================================================================
+// GITHUB PAGES / CLIENT-SIDE STORAGE ADAPTER
+// Seamlessly runs 100% interactively on GitHub Pages without requiring a backend!
+// ==========================================================================
+(function() {
+    const isGitHubPages = window.location.hostname.endsWith('github.io') || window.location.protocol === 'file:';
+
+    const defaultDepts = [
+        { id: 1, name: "Computer Science & Engineering", code: "CSE", icon: "bi-laptop", description: "Computer Science, AI, Cyber Security, Software Engineering" },
+        { id: 2, name: "Mechanical Engineering", code: "MECH", icon: "bi-gear-wide-connected", description: "Thermodynamics, Robotics, Fluid Mechanics, Automobile" },
+        { id: 3, name: "Medical & Health Sciences", code: "MED", icon: "bi-heart-pulse", description: "Human Anatomy, Physiology, Pathology, Pharmacology, Surgery" },
+        { id: 4, name: "Electrical & Electronics", code: "EEE", icon: "bi-lightning-charge", description: "Circuits, Power Systems, Microprocessors, Control Systems" },
+        { id: 5, name: "Civil Engineering", code: "CIVIL", icon: "bi-buildings", description: "Structural Analysis, Geotechnical, Surveying, Construction" },
+        { id: 6, name: "Basic Sciences & Humanities", code: "BSH", icon: "bi-journal-bookmark", description: "Applied Mathematics, Engineering Physics, Chemistry" }
+    ];
+
+    const defaultBooks = [
+        { id: 1, isbn: "978-0262033848", title: "Introduction to Algorithms (CLRS)", author: "Thomas H. Cormen et al.", department_id: 1, edition: "4th Ed.", total_copies: 5, available_copies: 4, shelf_location: "Shelf CS-01" },
+        { id: 2, isbn: "978-1118063330", title: "Operating System Concepts", author: "Abraham Silberschatz, Peter Galvin", department_id: 1, edition: "10th Ed.", total_copies: 4, available_copies: 3, shelf_location: "Shelf CS-02" },
+        { id: 3, isbn: "978-0073523323", title: "Database System Concepts", author: "Abraham Silberschatz, Henry Korth", department_id: 1, edition: "7th Ed.", total_copies: 6, available_copies: 5, shelf_location: "Shelf CS-03" },
+        { id: 4, isbn: "978-0133594140", title: "Computer Networking: A Top-Down Approach", author: "James Kurose, Keith Ross", department_id: 1, edition: "8th Ed.", total_copies: 4, available_copies: 4, shelf_location: "Shelf CS-04" },
+        { id: 5, isbn: "978-0132350884", title: "Clean Code: A Handbook of Agile Software", author: "Robert C. Martin", department_id: 1, edition: "1st Ed.", total_copies: 3, available_copies: 2, shelf_location: "Shelf CS-05" },
+
+        { id: 6, isbn: "978-9352606429", title: "Engineering Thermodynamics", author: "P.K. Nag", department_id: 2, edition: "6th Ed.", total_copies: 6, available_copies: 5, shelf_location: "Shelf ME-01" },
+        { id: 7, isbn: "978-0195371239", title: "Theory of Machines and Mechanisms", author: "Joseph E. Shigley, John J. Uicker", department_id: 2, edition: "5th Ed.", total_copies: 4, available_copies: 4, shelf_location: "Shelf ME-02" },
+        { id: 8, isbn: "978-0073380322", title: "Fluid Mechanics: Fundamentals & Applications", author: "Yunus A. Cengel, John M. Cimbala", department_id: 2, edition: "4th Ed.", total_copies: 5, available_copies: 4, shelf_location: "Shelf ME-03" },
+        { id: 9, isbn: "978-0132272711", title: "Manufacturing Processes for Engineering Materials", author: "Serope Kalpakjian, Steven Schmid", department_id: 2, edition: "6th Ed.", total_copies: 3, available_copies: 3, shelf_location: "Shelf ME-04" },
+        { id: 10, isbn: "978-8187433545", title: "Strength of Materials", author: "S. Ramamrutham", department_id: 2, edition: "16th Ed.", total_copies: 7, available_copies: 6, shelf_location: "Shelf ME-05" },
+
+        { id: 11, isbn: "978-0323393041", title: "Gray's Anatomy for Students", author: "Richard Drake, A. Wayne Vogl", department_id: 3, edition: "4th Ed.", total_copies: 5, available_copies: 4, shelf_location: "Shelf MD-01" },
+        { id: 12, isbn: "978-1455770052", title: "Guyton and Hall Textbook of Medical Physiology", author: "John E. Hall, Michael E. Hall", department_id: 3, edition: "14th Ed.", total_copies: 5, available_copies: 5, shelf_location: "Shelf MD-02" },
+        { id: 13, isbn: "978-1455726134", title: "Robbins and Cotran Pathologic Basis of Disease", author: "Vinay Kumar, Abul K. Abbas", department_id: 3, edition: "10th Ed.", total_copies: 4, available_copies: 3, shelf_location: "Shelf MD-03" },
+        { id: 14, isbn: "978-1259644030", title: "Harrison's Principles of Internal Medicine", author: "J. Larry Jameson, Anthony Fauci", department_id: 3, edition: "21st Ed.", total_copies: 3, available_copies: 2, shelf_location: "Shelf MD-04" },
+        { id: 15, isbn: "978-9350259375", title: "Essentials of Medical Pharmacology", author: "K.D. Tripathi", department_id: 3, edition: "8th Ed.", total_copies: 6, available_copies: 6, shelf_location: "Shelf MD-05" },
+
+        { id: 16, isbn: "978-0199339136", title: "Microelectronic Circuits", author: "Adel S. Sedra, Kenneth C. Smith", department_id: 4, edition: "8th Ed.", total_copies: 5, available_copies: 4, shelf_location: "Shelf EE-01" },
+        { id: 17, isbn: "978-0073529547", title: "Electric Machinery Fundamentals", author: "Stephen J. Chapman", department_id: 4, edition: "5th Ed.", total_copies: 4, available_copies: 4, shelf_location: "Shelf EE-02" },
+        { id: 18, isbn: "978-0138147570", title: "Signals and Systems", author: "Alan V. Oppenheim, Alan S. Willsky", department_id: 4, edition: "2nd Ed.", total_copies: 5, available_copies: 5, shelf_location: "Shelf EE-03" },
+        { id: 19, isbn: "978-1118170519", title: "Control Systems Engineering", author: "Norman S. Nise", department_id: 4, edition: "7th Ed.", total_copies: 4, available_copies: 3, shelf_location: "Shelf EE-04" },
+
+        { id: 20, isbn: "978-8170088530", title: "Surveying (Vol I & II)", author: "B.C. Punmia, Ashok Kumar Jain", department_id: 5, edition: "16th Ed.", total_copies: 5, available_copies: 5, shelf_location: "Shelf CE-01" },
+        { id: 21, isbn: "978-0470556849", title: "Soil Mechanics and Foundations", author: "Muni Budhu", department_id: 5, edition: "3rd Ed.", total_copies: 4, available_copies: 4, shelf_location: "Shelf CE-02" },
+        { id: 22, isbn: "978-8187433231", title: "Design of Reinforced Concrete Structures", author: "S. Ramamrutham", department_id: 5, edition: "17th Ed.", total_copies: 6, available_copies: 5, shelf_location: "Shelf CE-03" },
+
+        { id: 23, isbn: "978-8193328491", title: "Higher Engineering Mathematics", author: "B.S. Grewal", department_id: 6, edition: "44th Ed.", total_copies: 8, available_copies: 7, shelf_location: "Shelf BSH-01" },
+        { id: 24, isbn: "978-0133978049", title: "University Physics with Modern Physics", author: "Hugh D. Young, Roger A. Freedman", department_id: 6, edition: "15th Ed.", total_copies: 5, available_copies: 5, shelf_location: "Shelf BSH-02" }
+    ];
+
+    const fmt = d => d.toISOString().split('T')[0];
+    const subDays = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return fmt(d); };
+    const addDays = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return fmt(d); };
+
+    const defaultIssues = [
+        { id: 1, book_id: 1, student_name: "Arpan Sharma", roll_no: "CS23B104", student_dept: "Computer Science", issue_date: subDays(5), due_date: addDays(9), return_date: null, status: "ISSUED", fine_amount: 0, notes: "Semester research" },
+        { id: 2, book_id: 2, student_name: "Rohan Mehta", roll_no: "CS23B082", student_dept: "Computer Science", issue_date: subDays(17), due_date: subDays(3), return_date: null, status: "ISSUED", fine_amount: 15, notes: "Overdue loan" },
+        { id: 3, book_id: 6, student_name: "Ananya Verma", roll_no: "ME22B045", student_dept: "Mechanical Engineering", issue_date: subDays(20), due_date: subDays(6), return_date: subDays(7), status: "RETURNED", fine_amount: 0, notes: "Returned in mint condition" },
+        { id: 4, book_id: 11, student_name: "Priya Nair", roll_no: "MD24M019", student_dept: "Medical Sciences", issue_date: subDays(3), due_date: addDays(11), return_date: null, status: "ISSUED", fine_amount: 0, notes: "Lab reference" }
+    ];
+
+    function initClientStore() {
+        if (!localStorage.getItem('snu_depts')) {
+            localStorage.setItem('snu_depts', JSON.stringify(defaultDepts));
+        }
+        if (!localStorage.getItem('snu_books')) {
+            localStorage.setItem('snu_books', JSON.stringify(defaultBooks));
+        }
+        if (!localStorage.getItem('snu_issues')) {
+            localStorage.setItem('snu_issues', JSON.stringify(defaultIssues));
+        }
+    }
+
+    function calculateClientFine(dueStr) {
+        try {
+            const due = new Date(dueStr);
+            const now = new Date();
+            const diffDays = Math.floor((now - due) / (1000 * 60 * 60 * 24));
+            if (diffDays > 0) return { fine: diffDays * 5, days: diffDays };
+            return { fine: 0, days: 0 };
+        } catch (e) {
+            return { fine: 0, days: 0 };
+        }
+    }
+
+    async function mockApiHandler(url, options = {}) {
+        initClientStore();
+        const method = (options.method || 'GET').toUpperCase();
+        const body = options.body ? JSON.parse(options.body) : {};
+
+        const resObj = (data, status = 200) => ({
+            ok: status >= 200 && status < 300,
+            status: status,
+            json: async () => data
+        });
+
+        const parsed = new URL(url, window.location.origin || 'http://localhost');
+        const path = parsed.pathname;
+        const q = parsed.searchParams;
+
+        const depts = JSON.parse(localStorage.getItem('snu_depts') || '[]');
+        const books = JSON.parse(localStorage.getItem('snu_books') || '[]');
+        const issues = JSON.parse(localStorage.getItem('snu_issues') || '[]');
+
+        if (path.endsWith('/api/departments') && method === 'GET') {
+            const list = depts.map(d => {
+                const bList = books.filter(b => b.department_id === d.id);
+                const total = bList.reduce((acc, b) => acc + (b.total_copies || 0), 0);
+                const avail = bList.reduce((acc, b) => acc + (b.available_copies || 0), 0);
+                return { ...d, book_count: bList.length, total_copies: total, available_copies: avail };
+            });
+            return resObj(list);
+        }
+
+        if (path.endsWith('/api/stats') && method === 'GET') {
+            const totalTitles = books.length;
+            const totalCopies = books.reduce((acc, b) => acc + (b.total_copies || 0), 0);
+            const availCopies = books.reduce((acc, b) => acc + (b.available_copies || 0), 0);
+            const issuedCopies = totalCopies - availCopies;
+            const activeBorrowers = new Set(issues.filter(i => i.status === 'ISSUED').map(i => i.roll_no)).size;
+
+            let overdueCount = 0;
+            const todayStr = fmt(new Date());
+            issues.forEach(i => {
+                if (i.status === 'ISSUED' && i.due_date < todayStr) overdueCount++;
+            });
+
+            const deptStats = depts.map(d => {
+                const bList = books.filter(b => b.department_id === d.id);
+                const tot = bList.reduce((acc, b) => acc + (b.total_copies || 0), 0);
+                const av = bList.reduce((acc, b) => acc + (b.available_copies || 0), 0);
+                return {
+                    id: d.id, name: d.name, code: d.code, icon: d.icon, description: d.description,
+                    title_count: bList.length, total_copies: tot, available_copies: av
+                };
+            });
+
+            return resObj({
+                total_titles: totalTitles,
+                total_copies: totalCopies,
+                available_copies: availCopies,
+                issued_copies: issuedCopies,
+                active_borrowers: activeBorrowers,
+                overdue_count: overdueCount,
+                departments_stats: deptStats
+            });
+        }
+
+        if (path.endsWith('/api/books') && method === 'GET') {
+            const deptId = q.get('department_id') ? parseInt(q.get('department_id')) : null;
+            const search = (q.get('search') || '').toLowerCase().trim();
+            const status = q.get('status') || 'all';
+
+            let list = books.map(b => {
+                const d = depts.find(d => d.id === b.department_id) || {};
+                return { ...b, department_name: d.name || '', department_code: d.code || '' };
+            });
+
+            if (deptId) list = list.filter(b => b.department_id === deptId);
+            if (status === 'available') list = list.filter(b => b.available_copies > 0);
+            if (status === 'out_of_stock') list = list.filter(b => b.available_copies <= 0);
+            if (search) {
+                list = list.filter(b => 
+                    b.title.toLowerCase().includes(search) ||
+                    b.author.toLowerCase().includes(search) ||
+                    b.isbn.toLowerCase().includes(search) ||
+                    (b.shelf_location || '').toLowerCase().includes(search)
+                );
+            }
+            return resObj(list);
+        }
+
+        if (path.includes('/api/books/') && method === 'GET') {
+            const id = parseInt(path.split('/').pop());
+            const book = books.find(b => b.id === id);
+            if (!book) return resObj({ error: 'Book not found' }, 404);
+            const d = depts.find(d => d.id === book.department_id) || {};
+            return resObj({ ...book, department_name: d.name, department_code: d.code });
+        }
+
+        if (path.endsWith('/api/books') && method === 'POST') {
+            const newId = books.length > 0 ? Math.max(...books.map(b => b.id)) + 1 : 1;
+            const newBook = {
+                id: newId,
+                isbn: body.isbn,
+                title: body.title,
+                author: body.author,
+                department_id: body.department_id,
+                edition: body.edition || '1st Ed.',
+                total_copies: body.total_copies,
+                available_copies: body.total_copies,
+                shelf_location: body.shelf_location || ''
+            };
+            books.push(newBook);
+            localStorage.setItem('snu_books', JSON.stringify(books));
+            return resObj({ message: 'Book added successfully', id: newId }, 201);
+        }
+
+        if (path.includes('/api/books/') && method === 'PUT') {
+            const id = parseInt(path.split('/').pop());
+            const idx = books.findIndex(b => b.id === id);
+            if (idx === -1) return resObj({ error: 'Book not found' }, 404);
+            const book = books[idx];
+            const issued = book.total_copies - book.available_copies;
+            const newTotal = body.total_copies;
+            if (newTotal < issued) return resObj({ error: `Cannot set total to ${newTotal}. ${issued} copies currently issued.` }, 400);
+
+            books[idx] = {
+                ...book,
+                isbn: body.isbn,
+                title: body.title,
+                author: body.author,
+                department_id: body.department_id,
+                edition: body.edition,
+                total_copies: newTotal,
+                available_copies: newTotal - issued,
+                shelf_location: body.shelf_location
+            };
+            localStorage.setItem('snu_books', JSON.stringify(books));
+            return resObj({ message: 'Book updated successfully' });
+        }
+
+        if (path.includes('/api/books/') && method === 'DELETE') {
+            const id = parseInt(path.split('/').pop());
+            const activeLoan = issues.some(i => i.book_id === id && i.status === 'ISSUED');
+            if (activeLoan) return resObj({ error: 'Cannot delete book while copies are actively issued.' }, 400);
+
+            const filtered = books.filter(b => b.id !== id);
+            localStorage.setItem('snu_books', JSON.stringify(filtered));
+            return resObj({ message: 'Book deleted successfully' });
+        }
+
+        if (path.endsWith('/api/issues') && method === 'GET') {
+            const status = q.get('status') || 'all';
+            const search = (q.get('search') || '').toLowerCase().trim();
+
+            let list = issues.map(item => {
+                const book = books.find(b => b.id === item.book_id) || {};
+                const d = depts.find(d => d.id === book.department_id) || {};
+                const calc = calculateClientFine(item.due_date);
+                const isOverdue = item.status === 'ISSUED' && calc.days > 0;
+
+                return {
+                    ...item,
+                    book_title: book.title || 'Unknown Title',
+                    book_isbn: book.isbn || '',
+                    department_name: d.name || '',
+                    department_code: d.code || '',
+                    calculated_fine: item.status === 'ISSUED' ? calc.fine : (item.fine_amount || 0),
+                    overdue_days: item.status === 'ISSUED' ? calc.days : 0,
+                    is_overdue: isOverdue
+                };
+            });
+
+            if (status === 'ISSUED') list = list.filter(i => i.status === 'ISSUED');
+            if (status === 'RETURNED') list = list.filter(i => i.status === 'RETURNED');
+            if (status === 'OVERDUE') list = list.filter(i => i.is_overdue);
+
+            if (search) {
+                list = list.filter(i =>
+                    i.student_name.toLowerCase().includes(search) ||
+                    i.roll_no.toLowerCase().includes(search) ||
+                    i.book_title.toLowerCase().includes(search)
+                );
+            }
+            return resObj(list);
+        }
+
+        if (path.endsWith('/api/issues') && method === 'POST') {
+            const bookIdx = books.findIndex(b => b.id === body.book_id);
+            if (bookIdx === -1) return resObj({ error: 'Book not found' }, 404);
+            if (books[bookIdx].available_copies <= 0) return resObj({ error: 'No copies available' }, 400);
+
+            books[bookIdx].available_copies -= 1;
+            const newIssueId = issues.length > 0 ? Math.max(...issues.map(i => i.id)) + 1 : 1;
+            const due = addDays(body.days || 14);
+
+            const newIssue = {
+                id: newIssueId,
+                book_id: body.book_id,
+                student_name: body.student_name,
+                roll_no: body.roll_no,
+                student_dept: body.student_dept,
+                issue_date: fmt(new Date()),
+                due_date: due,
+                return_date: null,
+                status: 'ISSUED',
+                fine_amount: 0,
+                notes: body.notes || ''
+            };
+            issues.push(newIssue);
+
+            localStorage.setItem('snu_books', JSON.stringify(books));
+            localStorage.setItem('snu_issues', JSON.stringify(issues));
+
+            return resObj({ message: 'Book issued successfully', due_date: due }, 201);
+        }
+
+        if (path.includes('/return') && method === 'POST') {
+            const parts = path.split('/');
+            const id = parseInt(parts[parts.indexOf('issues') + 1]);
+            const issueIdx = issues.findIndex(i => i.id === id);
+            if (issueIdx === -1) return resObj({ error: 'Issue record not found' }, 404);
+
+            const issue = issues[issueIdx];
+            if (issue.status === 'RETURNED') return resObj({ error: 'Already returned' }, 400);
+
+            const calc = calculateClientFine(issue.due_date);
+            issue.status = 'RETURNED';
+            issue.return_date = fmt(new Date());
+            issue.fine_amount = calc.fine;
+
+            const bookIdx = books.findIndex(b => b.id === issue.book_id);
+            if (bookIdx !== -1) {
+                books[bookIdx].available_copies += 1;
+                localStorage.setItem('snu_books', JSON.stringify(books));
+            }
+            localStorage.setItem('snu_issues', JSON.stringify(issues));
+
+            return resObj({ message: 'Book returned successfully', return_date: issue.return_date, fine_amount: calc.fine });
+        }
+
+        return resObj({ error: 'Endpoint not found' }, 404);
+    }
+
+    const realFetch = window.fetch;
+    window.fetch = async function(resource, init) {
+        const urlStr = typeof resource === 'string' ? resource : (resource && resource.url ? resource.url : '');
+        if (urlStr.includes('/api/')) {
+            if (isGitHubPages) {
+                return mockApiHandler(urlStr, init);
+            }
+            try {
+                const res = await realFetch(resource, init);
+                if (res.status === 404) {
+                    return mockApiHandler(urlStr, init);
+                }
+                return res;
+            } catch (err) {
+                return mockApiHandler(urlStr, init);
+            }
+        }
+        return realFetch(resource, init);
+    };
+})();
+
 let state = {
     activeTab: 'dashboard',
     currentDeptFilter: '',
