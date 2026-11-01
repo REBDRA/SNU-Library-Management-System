@@ -80,7 +80,13 @@
                     <div class="search-bar">
                         <i class="bi bi-search"></i>
                         <input type="text" id="global-search" placeholder="Search books, authors, ISBN, roll number..." oninput="handleGlobalSearch(this.value)">
+                        <button type="button" class="search-clear-btn" id="search-clear-btn" onclick="clearGlobalSearch()" title="Clear search" style="display: none;">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
                     </div>
+                    <button class="btn btn-secondary btn-header-refresh" id="btn-header-refresh" onclick="refreshCurrentData()" title="Refresh all library data">
+                        <i class="bi bi-arrow-clockwise"></i> <span>Refresh</span>
+                    </button>
                     <div class="date-chip">
                         <i class="bi bi-calendar3"></i>
                         <span id="current-date-display">Today</span>
@@ -92,45 +98,45 @@
             <section id="tab-dashboard" class="tab-pane active">
                 <!-- Metrics Grid -->
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="switchTab('catalog')" title="View all books in catalog" role="button" tabindex="0">
                         <div class="stat-icon icon-titles">
                             <i class="bi bi-journal-text"></i>
                         </div>
                         <div class="stat-meta">
-                            <span class="stat-label">Total Titles</span>
+                            <span class="stat-label">Total Titles <i class="bi bi-arrow-up-right stat-click-icon"></i></span>
                             <h3 class="stat-value" id="stat-titles">0</h3>
                             <span class="stat-sub" id="stat-copies">0 total copies</span>
                         </div>
                     </div>
 
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="filterCatalogByStock('available')" title="View all available books" role="button" tabindex="0">
                         <div class="stat-icon icon-available">
                             <i class="bi bi-check2-circle"></i>
                         </div>
                         <div class="stat-meta">
-                            <span class="stat-label">Available Copies</span>
+                            <span class="stat-label">Available Copies <i class="bi bi-arrow-up-right stat-click-icon"></i></span>
                             <h3 class="stat-value" id="stat-available">0</h3>
                             <span class="stat-sub">Ready for issue</span>
                         </div>
                     </div>
 
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="filterLoansTab('ISSUED')" title="View currently issued student loans" role="button" tabindex="0">
                         <div class="stat-icon icon-issued">
                             <i class="bi bi-arrow-up-right-circle"></i>
                         </div>
                         <div class="stat-meta">
-                            <span class="stat-label">Currently Issued</span>
+                            <span class="stat-label">Currently Issued <i class="bi bi-arrow-up-right stat-click-icon"></i></span>
                             <h3 class="stat-value" id="stat-issued">0</h3>
                             <span class="stat-sub" id="stat-borrowers">0 active students</span>
                         </div>
                     </div>
 
-                    <div class="stat-card">
+                    <div class="stat-card" onclick="filterLoansTab('OVERDUE')" title="View overdue loans requiring fines" role="button" tabindex="0">
                         <div class="stat-icon icon-overdue">
                             <i class="bi bi-exclamation-triangle-fill"></i>
                         </div>
                         <div class="stat-meta">
-                            <span class="stat-label">Overdue Returns</span>
+                            <span class="stat-label">Overdue Returns <i class="bi bi-arrow-up-right stat-click-icon"></i></span>
                             <h3 class="stat-value" id="stat-overdue">0</h3>
                             <span class="stat-sub">Fine applies ₹5/day</span>
                         </div>
@@ -185,6 +191,9 @@
                                 <option value="available">Available Only</option>
                                 <option value="out_of_stock">Out of Stock</option>
                             </select>
+                            <button class="btn btn-secondary" onclick="resetCatalogFilters()" title="Reset all catalog filters">
+                                <i class="bi bi-arrow-counterclockwise"></i> Reset
+                            </button>
                         </div>
                         <button class="btn btn-primary" onclick="openAddBookModal()">
                             <i class="bi bi-plus-lg"></i> Add New Book
@@ -236,7 +245,10 @@
                         <button class="chip chip-danger" onclick="filterLoanStatus(this, 'OVERDUE')">Overdue Only</button>
                         <button class="chip" onclick="filterLoanStatus(this, 'RETURNED')">Returned History</button>
                     </div>
-                    <div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-secondary" onclick="resetLoanFilters()" title="Reset loan filters">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </button>
                         <button class="btn btn-primary" onclick="openIssueModal()">
                             <i class="bi bi-box-arrow-up-right"></i> Issue Book to Student
                         </button>

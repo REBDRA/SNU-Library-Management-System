@@ -433,6 +433,11 @@ function switchTab(tabName) {
 // Global search bar handling
 let searchTimeout = null;
 function handleGlobalSearch(val) {
+    const clearBtn = document.getElementById('search-clear-btn');
+    if (clearBtn) {
+        clearBtn.style.display = val.trim().length > 0 ? 'flex' : 'none';
+    }
+
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
         state.searchQuery = val.trim();
@@ -446,6 +451,97 @@ function handleGlobalSearch(val) {
             loadCatalogBooks();
         }
     }, 250);
+}
+
+function clearGlobalSearch() {
+    const input = document.getElementById('global-search');
+    if (input) {
+        input.value = '';
+        input.focus();
+    }
+    const clearBtn = document.getElementById('search-clear-btn');
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    state.searchQuery = '';
+    if (state.activeTab === 'catalog') {
+        loadCatalogBooks();
+    } else if (state.activeTab === 'issues') {
+        loadIssues();
+    }
+}
+
+// Quick Refresh of all system data
+async function refreshCurrentData() {
+    const refreshBtn = document.getElementById('btn-header-refresh');
+    if (refreshBtn) refreshBtn.classList.add('rotating');
+
+    try {
+        await loadDepartments();
+        if (state.activeTab === 'dashboard') await loadDashboard();
+        if (state.activeTab === 'catalog') await loadCatalogBooks();
+        if (state.activeTab === 'departments') renderFullDepartmentsGrid();
+        if (state.activeTab === 'issues') await loadIssues();
+        showToast('Library data refreshed', 'success');
+    } catch (e) {
+        showToast('Refreshed', 'info');
+    } finally {
+        setTimeout(() => {
+            if (refreshBtn) refreshBtn.classList.remove('rotating');
+        }, 400);
+    }
+}
+
+// Stat Card Quick Navigation Handlers
+function filterCatalogByStock(stockFilter) {
+    switchTab('catalog');
+    const select = document.getElementById('catalog-status-filter');
+    if (select) {
+        select.value = stockFilter;
+        loadCatalogBooks();
+    }
+}
+
+function filterLoansTab(status) {
+    switchTab('issues');
+    state.issuesStatusFilter = status;
+    document.querySelectorAll('.loan-filter-chips .chip').forEach(c => {
+        const onclickAttr = c.getAttribute('onclick') || '';
+        c.classList.toggle('active', onclickAttr.includes(`'${status}'`));
+    });
+    loadIssues();
+}
+
+// Reset Catalog Filters
+function resetCatalogFilters() {
+    state.currentDeptFilter = '';
+    state.searchQuery = '';
+    const searchInput = document.getElementById('global-search');
+    if (searchInput) searchInput.value = '';
+    const clearBtn = document.getElementById('search-clear-btn');
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    const statusSelect = document.getElementById('catalog-status-filter');
+    if (statusSelect) statusSelect.value = 'all';
+
+    renderCatalogDeptChips();
+    loadCatalogBooks();
+    showToast('Catalog filters reset to all books', 'info');
+}
+
+// Reset Loan Filters
+function resetLoanFilters() {
+    state.issuesStatusFilter = 'all';
+    state.searchQuery = '';
+    const searchInput = document.getElementById('global-search');
+    if (searchInput) searchInput.value = '';
+    const clearBtn = document.getElementById('search-clear-btn');
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    const chips = document.querySelectorAll('.loan-filter-chips .chip');
+    chips.forEach((c, idx) => c.classList.toggle('active', idx === 0));
+
+    loadIssues();
+    showToast('Loan filters reset to all records', 'info');
 }
 
 // ----------------- API LOADERS -----------------
@@ -573,10 +669,15 @@ async function loadDashboardRecentLoans() {
                     <span class="loan-book" title="${escapeHtml(issue.book_title)}">${escapeHtml(issue.book_title)}</span>
                     <span class="loan-student"><strong class="roll-pill">${escapeHtml(issue.roll_no)}</strong> &bull; ${escapeHtml(issue.student_name)} &bull; ${escapeHtml(issue.student_dept)}</span>
                 </div>
-                <div class="loan-status-box">
-                    ${issue.is_overdue 
-                        ? `<span class="badge badge-status-overdue"><i class="bi bi-clock-history"></i> Overdue (${issue.overdue_days}d)</span>` 
-                        : `<span class="badge badge-status-active"><i class="bi bi-calendar-check"></i> Due ${issue.due_date}</span>`}
+                <div style="display: flex; align-items: center; gap: 0.65rem;">
+                    <div class="loan-status-box">
+                        ${issue.is_overdue 
+                            ? `<span class="badge badge-status-overdue"><i class="bi bi-clock-history"></i> Overdue (${issue.overdue_days}d)</span>` 
+                            : `<span class="badge badge-status-active"><i class="bi bi-calendar-check"></i> Due ${issue.due_date}</span>`}
+                    </div>
+                    <button class="btn btn-outline-sm btn-quick-return" onclick="event.stopPropagation(); openReturnModal(${issue.id})" title="Process return for this book">
+                        <i class="bi bi-arrow-return-left"></i> Return
+                    </button>
                 </div>
             </div>
         `).join('');
@@ -1034,9 +1135,21 @@ async function handleIssueSubmit(event) {
 }
 
 // RETURN BOOK MODAL
-function openReturnModal(issueId) {
-    const issue = state.issues.find(i => i.id === issueId);
-    if (!issue) return;
+async function openReturnModal(issueId) {
+    let issue = state.issues.find(i => i.id === issueId);
+    if (!issue) {
+        try {
+            const res = await fetch('/api/issues');
+            state.issues = await res.json();
+            issue = state.issues.find(i => i.id === issueId);
+        } catch (err) {
+            console.error('Error fetching issue details', err);
+        }
+    }
+    if (!issue) {
+        showToast('Loan record could not be loaded', 'error');
+        return;
+    }
 
     document.getElementById('return-issue-id').value = issue.id;
     document.getElementById('return-book-title').textContent = issue.book_title;
